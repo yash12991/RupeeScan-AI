@@ -1,0 +1,9 @@
+[
+  {"path": "data/images/val/val_10_rupees_0.jpg", "expected_class": "10_rupees"},
+  {"path": "data/images/val/val_20_rupees_0.jpg", "expected_class": "20_rupees"},
+  {"path": "data/images/val/val_50_rupees_0.jpg", "expected_class": "50_rupees"},
+  {"path": "data/images/val/val_100_rupees_0.jpg", "expected_class": "100_rupees"},
+  {"path": "data/images/val/val_200_rupees_0.jpg", "expected_class": "200_rupees"},
+  {"path": "data/images/val/val_500_rupees_0.jpg", "expected_class": "500_rupees"},
+  {"path": "data/images/val/val_2000_rupees_0.jpg", "expected_class": "2000_rupees"}
+]

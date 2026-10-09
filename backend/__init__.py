@@ -1,0 +1,1 @@
+"""RupeeScan backend package."""

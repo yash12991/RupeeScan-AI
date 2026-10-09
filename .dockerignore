@@ -1,0 +1,13 @@
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+data
+dataset
+evaluation
+scripts
+tests
+training
+runs
+*.onnx

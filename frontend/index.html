@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- SEO Meta Tags -->
+    <title>Indian Currency Detector for Visually Impaired - Real-time Note Recognition</title>
+    <meta name="description" content="An accessible, real-time Indian currency banknote detection application designed specifically for blind and visually impaired individuals using web cameras and voice synthesis.">
+    <meta name="keywords" content="indian currency detector, currency scanner, blind accessibility, visually impaired app, computer vision rupee detection">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <!-- Skip to content for keyboard accessibility -->
+    <a href="#main-container" class="skip-link">Skip to main content</a>
+
+    <!-- Main Container -->
+    <main id="main-container" class="app-container" role="main" aria-label="Currency Detector Interface">
+        
+        <!-- Background Decorative Gradients -->
+        <div class="bg-gradient-orb orb-1"></div>
+        <div class="bg-gradient-orb orb-2"></div>
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="currency-icon" aria-hidden="true">₹</span>
+                <div>
+                    <h1 id="app-title">RupeeScan</h1>
+                    <p class="subtitle">Indian Currency Assistant</p>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <!-- Accessibility Controls -->
+                <button id="toggle-contrast" class="btn-control" aria-label="Toggle High Contrast Mode" aria-pressed="false" title="Toggle High Contrast Theme (Alt+C)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 2a10 10 0 0 0 0 20V2z" fill="currentColor" />
+                    </svg>
+                    <span class="btn-text">High Contrast</span>
+                </button>
+                <button id="toggle-speech" class="btn-control active" aria-label="Mute Voice Guidance" aria-pressed="true" title="Toggle Voice Feedback">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg m-on">
+                        <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg m-off hidden">
+                        <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                        <line x1="23" y1="9" x2="17" y2="15"/>
+                        <line x1="17" y1="9" x2="23" y2="15"/>
+                    </svg>
+                    <span class="btn-text">Voice On</span>
+                </button>
+                <button id="open-about-modal" class="btn-control" aria-label="About RupeeScan and Team" title="About RupeeScan and Team (Alt+A)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <span class="btn-text">About Us</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace Area -->
+        <section class="workspace-section">
+            <!-- Camera Viewfinder Card -->
+            <div class="card viewfinder-card" aria-label="Camera Live Viewfinder">
+                <div class="camera-wrapper">
+                    <!-- Video Element -->
+                    <video id="webcam" autoplay playsinline muted aria-hidden="true"></video>
+                    
+                    <!-- Image Preview Element for Uploads -->
+                    <img id="image-preview" class="hidden" alt="Uploaded Banknote Preview" style="width: 100%; height: 100%; object-fit: contain; background: #08090d;" />
+                    
+                    <!-- Reset/Back to Webcam Button -->
+                    <button id="reset-camera-btn" class="btn-reset-camera hidden" aria-label="Return to live camera recognition">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        <span>Switch to Live Camera</span>
+                    </button>
+                    
+                    <!-- Bounding Box Boundary Overlay -->
+                    <div id="bbox-overlay" class="bbox-overlay hidden">
+                        <span class="bbox-label">BANKNOTE</span>
+                    </div>
+
+                    <!-- Scanner Animation Elements -->
+                    <div class="scan-overlay">
+                        <div class="scanning-reticle"></div>
+                        <div class="scanning-beam"></div>
+                    </div>
+                    
+                    <!-- Error / Loading Overlay -->
+                    <div id="camera-fallback" class="camera-fallback-overlay hidden">
+                        <div class="fallback-content">
+                            <div class="alert-icon">⚠️</div>
+                            <h3>Camera Access Required</h3>
+                            <p>Please grant camera permissions to enable real-time banknote recognition.</p>
+                            <button id="retry-camera" class="btn-primary">Grant Permission</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard / Status Card -->
+            <div class="card status-card">
+                <div class="status-header">
+                    <h2>Detector Status</h2>
+                    <span id="connection-indicator" class="badge badge-error" role="status">Disconnected</span>
+                </div>
+                
+                <!-- Main output displays -->
+                <div class="detection-display" id="detection-display" aria-live="polite">
+                    <div class="no-detection-msg">
+                        <span class="pulse-dot"></span>
+                        <p id="status-text">Starting system...</p>
+                    </div>
+                </div>
+
+                <!-- Image upload area -->
+                <div class="upload-area">
+                    <p class="upload-title">Or recognize from image file:</p>
+                    <label for="image-upload" class="btn-upload" id="upload-label" role="button" tabindex="0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <span>Upload Image</span>
+                    </label>
+                    <input type="file" id="image-upload" accept="image/*" class="hidden-input" style="display: none;" />
+                </div>
+
+                <!-- Guidance / Instruction for fully blind users -->
+                <div class="guidance-box" aria-live="assertive">
+                    <p id="audio-guidance">Double-tap anywhere to repeat the last detected banknote. Triple-tap to toggle High Contrast.</p>
+                    <p>Denomination assistance only. Any authenticity estimate is experimental and must not be used as proof that a note is genuine or counterfeit.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Accessibility Instructions Footer -->
+        <footer class="app-footer">
+            <p>Designed for Accessibility. Keyboard Shortcuts: <kbd>Alt + C</kbd> Contrast, <kbd>Alt + V</kbd> Voice, <kbd>Alt + A</kbd> About, <kbd>Space</kbd> Scan.</p>
+        </footer>
+
+        <!-- About Us Modal -->
+        <div id="about-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <div class="modal-title-wrap">
+                        <span class="currency-icon" aria-hidden="true" style="font-size: 1.5rem; width: 36px; height: 36px;">₹</span>
+                        <div>
+                            <h2 id="about-modal-title" style="font-size: 1.35rem; font-weight: 800; margin: 0;">About RupeeScan</h2>
+                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">Empowering Financial Independence Through Computer Vision</p>
+                        </div>
+                    </div>
+                    <button id="close-about-modal" class="modal-close-btn" aria-label="Close About Dialog">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <section class="about-section">
+                        <h3>🌟 Our Mission</h3>
+                        <p>RupeeScan is an assistive technology application created to empower blind and visually impaired individuals in India to independently and confidently identify Indian currency banknotes in real time.</p>
+                    </section>
+
+                    <section class="about-section">
+                        <h3>🧠 AI & Computer Vision Architecture</h3>
+                        <p>Powered by a hybrid vision pipeline combining deep learning and classic computer vision:</p>
+                        <ul class="about-features-list">
+                            <li><strong>ResNet-18 Deep Neural Network:</strong> Real-time denomination classification across ₹10, ₹20, ₹50, ₹100, ₹200, ₹500, and ₹2000 notes.</li>
+                            <li><strong>Contour & Edge Localization:</strong> Real-time banknote boundary detection with dynamic bounding-box overlays.</li>
+                            <li><strong>Color & Texture Guardrails:</strong> HSV histogram and Laplacian variance checks to distinguish genuine currency characteristics from untextured sketches.</li>
+                            <li><strong>Sub-10ms Inference:</strong> Optimized on CPU and GPU pipelines running at over 120 FPS.</li>
+                        </ul>
+                    </section>
+
+                    <section class="about-section">
+                        <h3>♿ Accessibility First (WCAG 2.1 AA)</h3>
+                        <ul class="about-features-list">
+                            <li><strong>Voice Synthesis:</strong> Automatic, natural spoken audio output via the browser Web Speech API.</li>
+                            <li><strong>High-Contrast Mode:</strong> Specially calibrated ultra-high contrast palette (Pure Black & Bright Yellow) for low-vision users.</li>
+                            <li><strong>Full Keyboard & Tactile Control:</strong> Dedicated keyboard hotkeys (<kbd>Alt+C</kbd>, <kbd>Alt+V</kbd>, <kbd>Alt+A</kbd>, <kbd>Space</kbd>) and touch gestures.</li>
+                        </ul>
+                    </section>
+
+                    <section class="about-section">
+                        <h3>👨‍💻 About the Developer</h3>
+                        <p>Developed with passion by <strong>Yash Sonawane</strong> (<a href="https://github.com/yash12991" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); text-decoration: underline;">@yash12991</a>) as an impactful Computer Vision project dedicated to open-source accessibility.</p>
+                    </section>
+                </div>
+                <div class="modal-footer">
+                    <button id="dismiss-about-btn" class="btn-control active" style="width: 100%; justify-content: center;">
+                        <span class="btn-text">Close & Return to Scanner</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript Source -->
+    <script src="app.js"></script>
+</body>
+</html>
