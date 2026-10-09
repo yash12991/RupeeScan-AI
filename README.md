@@ -50,27 +50,95 @@ In India, while modern banknotes feature tactile bleeding lines and variable siz
 
 ## 🏗️ System Architecture
 
+![RupeeScan System Architecture](assets/architecture_diagram.png)
+
+```mermaid
+graph LR
+    subgraph Input["1. Input Layer"]
+        CAM["📷 Webcam / Mobile Camera"] --> CANVAS["Canvas Frame Grabbing"]
+        UPLOAD["📁 Photo Upload (REST)"] --> ENCODE["Base64 JPEG Encoding"]
+        CANVAS --> WS_CLIENT["WebSocket Client"]
+    end
+
+    subgraph Backend["2. Backend & Networking (FastAPI)"]
+        WS_CLIENT --> WS_ENDPOINT["/ws/detect (WebSocket)"]
+        ENCODE --> WS_ENDPOINT
+        UPLOAD --> REST_ENDPOINT["/api/detect (POST)"]
+        WS_ENDPOINT --> VALIDATE["Security & Pixel Validation (Pillow)"]
+        REST_ENDPOINT --> VALIDATE
+    end
+
+    subgraph Vision["3. AI & Computer Vision Engine"]
+        VALIDATE --> RESNET["PyTorch ResNet-18 (Denomination Classifier)"]
+        VALIDATE --> OPENCV_COLOR["OpenCV HSV Color Correlation"]
+        VALIDATE --> OPENCV_TEXTURE["Laplacian & Canny Texture Checks"]
+        VALIDATE --> OPENCV_BBOX["Contour Bounding-Box Localization"]
+        RESNET --> FUSION["Decision Fusion & Confidence Gating"]
+        OPENCV_COLOR --> FUSION
+        OPENCV_TEXTURE --> FUSION
+        OPENCV_BBOX --> FUSION
+    end
+
+    subgraph Output["4. Accessible Output Layer"]
+        FUSION --> JSON_OUT["JSON Result Payload"]
+        JSON_OUT --> SPEECH["🗣️ Web Speech API (Spoken Audio)"]
+        JSON_OUT --> BBOX_UI["🟩 Dynamic Banknote Bounding Box"]
+        JSON_OUT --> CONTRAST["👁️ WCAG High-Contrast Display"]
+    end
+
+    style Input fill:#121420,stroke:#00f2fe,stroke-width:2px,color:#fff
+    style Backend fill:#121420,stroke:#89f7fe,stroke-width:2px,color:#fff
+    style Vision fill:#121420,stroke:#e040fb,stroke-width:2px,color:#fff
+    style Output fill:#121420,stroke:#00e676,stroke-width:2px,color:#fff
 ```
-[ Web Camera / Image File ]
-            │
-            ▼ (Base64 Video Frames via WebSocket / Multipart REST)
-[ FastAPI Backend (backend/main.py) ]
-            │
-            ├──► [ Preprocessing & Validation ] (Dimension, byte size, format checks)
-            │
-            ├──► [ Stage 1: ResNet-18 PyTorch Classifier ] (7 Banknote Denominations)
-            │
-            ├──► [ Stage 2: OpenCV Guardrails ]
-            │         ├─ HSV Histogram Color Correlation
-            │         ├─ Laplacian Variance & Canny Texture Checks
-            │         └─ Contour Aspect Ratio Bounding-Box Localization
-            │
-            ▼ (JSON Prediction Payload + Bounding Box Coordinates)
-[ Accessible Browser Frontend (Vanilla HTML5 / Modern CSS / JS) ]
-            ├─ Dynamic Bounding Box Overlay
-            ├─ High-Contrast Visual Indicator
-            └─ Spoken Audio via Web Speech API
-```
+
+---
+
+## 🔍 What We Use (Technology Stack & Tooling)
+
+| Component | Technology | Why We Use It |
+|---|---|---|
+| **Deep Learning** | **PyTorch & Torchvision (ResNet-18)** | Compact, battle-tested convolutional network fine-tuned on Indian banknote denominations; achieves sub-8ms CPU latency (~127 FPS). |
+| **Computer Vision** | **OpenCV (opencv-python-headless)** | Fast image processing for color consistency (HSV histograms), print sharpness (Laplacian variance), and real-time banknote contour boundary detection. |
+| **Backend Framework** | **FastAPI** | High-performance asynchronous Python web framework with native WebSocket support, threadpool offloading, and automated schema validation. |
+| **Server Engine** | **Uvicorn (ASGI)** | Lightning-fast ASGI web server capable of handling persistent WebSocket frame streaming without memory leaks. |
+| **Image Validation** | **Pillow (PIL)** | Safe preliminary image dimension and byte verification before decoding, preventing decompression bombs or malformed buffers. |
+| **Voice Synthesis** | **Browser Web Speech API** | Client-side, zero-latency text-to-speech engine that converts detection verdicts into natural spoken Hindi/English voice guidance. |
+| **Frontend Architecture** | **Vanilla HTML5, CSS3, & Modern JS** | Lightweight, responsive, zero-dependency browser client with zero build overhead. Runs instantaneously on mobile and desktop browsers. |
+| **Accessibility Compliance** | **WCAG 2.1 AA Standards** | Specially calibrated high-contrast theme (Black & Yellow), screen-reader ARIA live regions, and tactile keyboard shortcuts (<kbd>Alt+C</kbd>, <kbd>Alt+V</kbd>, <kbd>Alt+A</kbd>, <kbd>Space</kbd>). |
+
+---
+
+## ⚙️ How It Works (End-to-End Pipeline)
+
+### 1. Frame Capture & Streaming
+The user opens RupeeScan in any browser. `navigator.mediaDevices.getUserMedia` activates the device camera (or user selects an image file). The browser client draws video frames onto an internal canvas, converts them into base64 JPEG buffers, and streams them over a bidirectional WebSocket (`/ws/detect`). A ping-pong control flag ensures the client only dispatches new frames once the previous response has arrived, preventing buffer bloat.
+
+### 2. Validation & Preprocessing
+FastAPI receives the frame and passes the raw buffer through `decode_image_bytes()`:
+- Verifies the payload does not exceed **10 MB** (`RUPEESCAN_MAX_IMAGE_BYTES`).
+- Verifies decoded dimensions do not exceed **16 Megapixels** (`RUPEESCAN_MAX_IMAGE_PIXELS`).
+- Decodes the verified buffer into a standard OpenCV BGR NumPy array.
+
+### 3. Stage 1: PyTorch ResNet-18 Denomination Classification
+The image is converted to RGB, resized to `224x224`, normalized using standard ImageNet parameters, and passed through a custom fine-tuned **ResNet-18**:
+- Evaluates output logits across all 7 Indian banknote classes: **₹10, ₹20, ₹50, ₹100, ₹200, ₹500, ₹2000**.
+- Applies softmax normalization to compute confidence scores.
+- A confidence threshold (`> 0.55`) filters out blank backgrounds or non-currency objects.
+
+### 4. Stage 2: OpenCV Visual Verification & Guardrails
+To prevent false positives from plain paper or black-and-white drawings, OpenCV evaluates:
+- **Color Consistency:** Compares the HSV color distribution of the query image against reference templates using histogram correlation (`cv2.compareHist`).
+- **Texture & Edge Density:** Calculates Laplacian variance (`cv2.Laplacian`) and Canny edge density to ensure the frame contains high-frequency intaglio printing patterns characteristic of authentic banknotes rather than hand-drawn sketches.
+
+### 5. Banknote Boundary Localization
+The frame undergoes Gaussian blurring, Canny edge detection, and morphological dilation. Contours covering at least 4% of the image area with an aspect ratio between 1.2 and 3.6 are extracted. The coordinates are normalized into relative bounding box values `{"x", "y", "w", "h"}`.
+
+### 6. Accessible Spoken & Visual Feedback
+The JSON response is transmitted back to the browser client:
+- The frontend dynamically aligns the visual bounding-box overlay around the banknote.
+- The UI status text updates with high-contrast badge colors.
+- The **Web Speech API** speaks the friendly denomination name (e.g., *"Detected Five Hundred Rupees"*). If the user double-taps anywhere on the screen or presses <kbd>Space</kbd>, the application immediately re-announces the last detected note.
 
 ---
 
