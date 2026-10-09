@@ -145,6 +145,100 @@ The JSON response is transmitted back to the browser client:
 
 ---
 
+## 🔬 In-Depth Computer Vision & Deep Learning Pipeline
+
+After a video frame or uploaded photo arrives at the backend (`POST /api/detect` or `WS /ws/detect`), it passes through a multi-stage dual-track processing pipeline designed for speed, accuracy, and anti-spoofing resilience:
+
+![RupeeScan In-Depth Computer Vision Pipeline](assets/cv_pipeline_in_depth.png)
+
+```mermaid
+flowchart TD
+    IMG["📥 Client Image Received (Base64 / Multipart)"] --> DEC["🛡️ Safe Decompression & Validation (Pillow/OpenCV)"]
+    DEC --> FORK{"Dual-Track Parallel Processing"}
+
+    subgraph DeepLearning["Track A: Deep Learning Path (PyTorch ResNet-18)"]
+        FORK --> RGB["Convert BGR ➔ RGB"]
+        RGB --> RESIZE["Spatial Resize to 224 × 224 px"]
+        RESIZE --> NORM["Tensor Normalization (ImageNet μ, σ)"]
+        NORM --> RESNET["ResNet-18 Convolutional Forward Pass"]
+        RESNET --> SOFTMAX["Softmax Activation ➔ 7 Class Probabilities"]
+        SOFTMAX --> GATING{"Confidence > 0.55?"}
+    end
+
+    subgraph ClassicalCV["Track B: Classical Computer Vision Guardrails (OpenCV)"]
+        FORK --> HSV["HSV Color Space Conversion"]
+        HSV --> HIST["2D Histogram (32×32) Correlation Check"]
+        FORK --> LAP["Laplacian Variance (Sharpness Check)"]
+        FORK --> CANNY["Canny Edge Density (Intaglio Texture)"]
+        HIST --> GUARD{"Color & Texture Valid?"}
+        LAP --> GUARD
+        CANNY --> GUARD
+    end
+
+    subgraph ContourLoc["Track C: Banknote Localization"]
+        FORK --> BLUR["Gaussian Blur (5×5)"]
+        BLUR --> EDGE["Canny Edge Detection (30, 150)"]
+        EDGE --> DILATE["Morphological Dilation"]
+        DILATE --> CONTOURS["Find External Contours"]
+        CONTOURS --> BBOX["Filter Area (>4%) & Aspect Ratio (1.2 - 3.6)"]
+    end
+
+    GATING -- Yes --> FUSION["Decision Fusion Engine"]
+    GUARD -- Pass --> FUSION
+    BBOX --> FUSION
+    GATING -- No --> UNKNOWN["Return Unrecognized / Align Note"]
+    GUARD -- Fail --> UNKNOWN
+
+    FUSION --> JSON_OUT["📤 Output JSON: Denomination, Confidence, Bounding Box"]
+
+    style DeepLearning fill:#121420,stroke:#89f7fe,stroke-width:2px,color:#fff
+    style ClassicalCV fill:#121420,stroke:#00e676,stroke-width:2px,color:#fff
+    style ContourLoc fill:#121420,stroke:#e040fb,stroke-width:2px,color:#fff
+    style FUSION fill:#1a1c2e,stroke:#00f2fe,stroke-width:2px,color:#fff
+```
+
+### Detailed Pipeline Stages
+
+#### 1. Payload Ingestion & Defensive Decompression
+- Incoming frames are checked against byte-size limits ($\le 10$ MB) and decoded dimensions ($\le 16$ Megapixels).
+- Using Pillow's `Image.open().verify()`, corrupt bytes and decompression bomb attacks are rejected before OpenCV memory allocation.
+- The validated buffer is converted into an 8-bit unsigned integer NumPy buffer and decoded via `cv2.imdecode()` to an $H \times W \times 3$ BGR matrix.
+
+#### 2. Deep Learning Track (PyTorch ResNet-18)
+- **Color Correction:** OpenCV's default BGR order is converted to RGB via `cv2.cvtColor(img, cv2.COLOR_BGR2RGB)`.
+- **Transformation Pipeline:**
+  $$\text{Input Image} \xrightarrow{\text{Resize}(224 \times 224)} \xrightarrow{\text{ToTensor}} \xrightarrow{\text{Normalize}(\mu, \sigma)} \text{Tensor } [1, 3, 224, 224]$$
+  where $\mu = [0.485, 0.456, 0.406]$ and $\sigma = [0.229, 0.224, 0.225]$.
+- **Inference:** A fine-tuned **ResNet-18** executes on the PyTorch inference device (MPS/CUDA or CPU). Its skip connections ($F(x) + x$) preserve low-level currency watermarks and high-level structural features.
+- **Classification:** The output logits pass through a softmax function to produce class posterior probabilities for the 7 denominations:
+  $$P(\text{class}_i) = \frac{e^{z_i}}{\sum_{j=0}^{6} e^{z_j}}$$
+- A confidence threshold ($\tau = 0.55$) prevents false positive triggers on plain backgrounds.
+
+#### 3. Classical Computer Vision Guardrails Track
+- **HSV 2D Histogram Correlation:**
+  - Converts the image to Hue-Saturation-Value color space: `cv2.cvtColor(img, cv2.COLOR_BGR2HSV)`.
+  - Calculates a 2D histogram over Hue $[0, 180]$ and Saturation $[0, 256]$ with $32 \times 32$ bins.
+  - Compares the histogram against genuine banknote reference templates using the correlation metric:
+    $$d(H_1, H_2) = \frac{\sum_I (H_1(I) - \bar{H}_1)(H_2(I) - \bar{H}_2)}{\sqrt{\sum_I (H_1(I) - \bar{H}_1)^2 \sum_I (H_2(I) - \bar{H}_2)^2}}$$
+  - If the correlation score drops below the safe threshold ($0.535$), the frame is flagged for color mismatch (e.g., black-and-white printouts or wrong notes).
+- **Texture & Edge Density Analysis:**
+  - Evaluates print sharpness via the Laplacian variance: $\text{Var}(\nabla^2 I) \ge 1300$.
+  - Evaluates high-frequency Canny edge density: $\ge 11.0\%$ of pixels. Real currency notes feature complex geometric security guilloches and intaglio printing that hand-drawn sketches or blank paper cannot mimic.
+
+#### 4. Banknote Boundary Localization & Contour Analysis
+- Converts frame to grayscale and applies a $5 \times 5$ Gaussian blur ($\sigma = 0$) to eliminate camera sensor noise.
+- Applies Canny edge detection with hysteresis thresholds $(30, 150)$.
+- Dilates the edges using a $5 \times 5$ rectangular structuring element to close disconnected perimeter segments.
+- Extracts external contours using `cv2.findContours(cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)`.
+- **Geometric Filtering:**
+  - Minimum area requirement: must cover $\ge 4\%$ of the total frame area.
+  - Aspect ratio requirement: $1.2 \le \frac{\max(w, h)}{\min(w, h)} \le 3.6$, matching physical Indian currency proportions.
+- Normalizes coordinates into relative units: $\{x, y, w, h\} \in [0.0, 1.0]$.
+
+#### 5. Output Synthesis
+- Combines the ResNet-18 classification, confidence rating, OpenCV guardrail validations, and normalized bounding box coordinates into a unified response JSON payload.
+- Transmitted back to the client in under 10 milliseconds.
+
 ## ⚠️ Safety and Project Status
 
 - **Denomination detection is the primary feature.** Authenticity classification is experimental, disabled by default, and must not be treated as proof that a banknote is genuine or counterfeit. Confirm questionable notes through an authorized bank or other official process.

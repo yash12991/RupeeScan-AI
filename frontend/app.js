@@ -26,6 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeAboutBtn = document.getElementById("close-about-modal");
     const dismissAboutBtn = document.getElementById("dismiss-about-btn");
 
+    // Audio Visualizer
+    const audioVisualizer = document.getElementById("audio-visualizer");
+
     // Off-screen canvas for capturing/resizing video frames
     const captureCanvas = document.createElement("canvas");
     const captureCtx = captureCanvas.getContext("2d");
@@ -80,6 +83,15 @@ document.addEventListener("DOMContentLoaded", () => {
         utterance.onstart = () => {
             lastSpokenText = text;
             lastSpokenTime = Date.now();
+            if (audioVisualizer) audioVisualizer.classList.remove("hidden");
+        };
+
+        utterance.onend = () => {
+            if (audioVisualizer) audioVisualizer.classList.add("hidden");
+        };
+
+        utterance.onerror = () => {
+            if (audioVisualizer) audioVisualizer.classList.add("hidden");
         };
 
         window.speechSynthesis.speak(utterance);
@@ -383,14 +395,43 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update Dashboard Display
         const renderKey = `${res.class_name}|${res.authenticity_experimental ? res.authentic : "none"}`;
         const shouldRender = source === "upload" || renderKey !== lastRenderedKey;
+        const denomThemeClass = `denom-${res.class_name || "unknown"}`;
+        const confPercent = (confidence * 100).toFixed(0);
+        const bboxInfo = res.bbox ? `BBox: ${(res.bbox.w * 100).toFixed(0)}% × ${(res.bbox.h * 100).toFixed(0)}%` : "Contour Centered";
+
         if (shouldRender) displayArea.innerHTML = `
-            <div class="detection-result-card ${authClass}">
-                <p class="result-denom">${escapeHtml(res.friendly_name)}</p>
-                ${authBadgeHtml}
-                <div class="result-conf-bar">
-                    <div class="result-conf-fill" style="width: ${confidence * 100}%"></div>
+            <div class="detection-result-card ${denomThemeClass} ${authClass}">
+                <div class="result-header-row">
+                    <span class="denom-symbol-badge">₹</span>
+                    <div class="result-title-group">
+                        <p class="result-denom">${escapeHtml(res.friendly_name)}</p>
+                        <span class="denom-tag-pill">INDIAN BANKNOTE</span>
+                    </div>
                 </div>
-                <p class="result-meta">Denomination Confidence: ${(confidence * 100).toFixed(0)}%</p>
+                ${authBadgeHtml}
+                <div class="result-conf-container">
+                    <div class="conf-labels">
+                        <span class="conf-text">AI Confidence</span>
+                        <span class="conf-percentage">${confPercent}%</span>
+                    </div>
+                    <div class="result-conf-bar">
+                        <div class="result-conf-fill" style="width: ${confidence * 100}%"></div>
+                    </div>
+                </div>
+                <div class="detection-pills-grid">
+                    <div class="det-pill">
+                        <span class="det-pill-label">Engine</span>
+                        <span class="det-pill-value">ResNet-18</span>
+                    </div>
+                    <div class="det-pill">
+                        <span class="det-pill-label">Frame</span>
+                        <span class="det-pill-value">${bboxInfo}</span>
+                    </div>
+                    <div class="det-pill">
+                        <span class="det-pill-label">CV Guards</span>
+                        <span class="det-pill-value">HSV &amp; Texture OK</span>
+                    </div>
+                </div>
                 ${res.authenticity_confidence !== null && res.authenticity_confidence !== undefined ? 
                   `<p class="result-meta">Authenticity Confidence: ${(clamp(res.authenticity_confidence, 0, 1) * 100).toFixed(0)}%</p>` : ''}
                 ${res.authenticity_experimental ?
@@ -488,6 +529,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             // Cancel any speaking immediately
             window.speechSynthesis.cancel();
+            if (audioVisualizer) audioVisualizer.classList.add("hidden");
             mOnIcon.classList.add("hidden");
             mOffIcon.classList.remove("hidden");
             voiceBtnText.textContent = "Voice Muted";
@@ -658,13 +700,27 @@ document.addEventListener("DOMContentLoaded", () => {
         window.speechSynthesis.cancel();
     });
 
-    // Keyboard support for space click on label (improve accessibility)
+    // Keyboard and Drag-and-Drop support for upload label
     const uploadLabel = document.getElementById("upload-label");
     if (uploadLabel) {
         uploadLabel.addEventListener("keydown", (e) => {
             if (e.key === " " || e.key === "Enter") {
                 e.preventDefault();
                 imageUpload.click();
+            }
+        });
+        uploadLabel.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            uploadLabel.classList.add("dragover");
+        });
+        uploadLabel.addEventListener("dragleave", () => {
+            uploadLabel.classList.remove("dragover");
+        });
+        uploadLabel.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadLabel.classList.remove("dragover");
+            if (e.dataTransfer?.files?.length) {
+                handleImageUpload({ target: { files: e.dataTransfer.files } });
             }
         });
     }

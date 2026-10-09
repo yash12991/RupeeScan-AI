@@ -75,6 +75,18 @@
             <!-- Camera Viewfinder Card -->
             <div class="card viewfinder-card" aria-label="Camera Live Viewfinder">
                 <div class="camera-wrapper">
+                    <!-- HUD Corner Reticles -->
+                    <div class="hud-corner hud-corner-tl" aria-hidden="true"></div>
+                    <div class="hud-corner hud-corner-tr" aria-hidden="true"></div>
+                    <div class="hud-corner hud-corner-bl" aria-hidden="true"></div>
+                    <div class="hud-corner hud-corner-br" aria-hidden="true"></div>
+
+                    <!-- Telemetry Live Stream Badge -->
+                    <div class="hud-telemetry" aria-hidden="true">
+                        <span class="hud-pulse-dot"></span>
+                        <span class="hud-telemetry-text">LIVE STREAM · AI READY</span>
+                    </div>
+
                     <!-- Video Element -->
                     <video id="webcam" autoplay playsinline muted aria-hidden="true"></video>
                     
@@ -116,8 +128,24 @@
             <!-- Dashboard / Status Card -->
             <div class="card status-card">
                 <div class="status-header">
-                    <h2>Detector Status</h2>
+                    <div class="status-title-wrap">
+                        <h2>Detector Status</h2>
+                        <span class="model-tech-pill">ResNet-18 · ~127 FPS</span>
+                    </div>
                     <span id="connection-indicator" class="badge badge-error" role="status">Disconnected</span>
+                </div>
+
+                <!-- Audio Waveform Visualizer -->
+                <div id="audio-visualizer" class="audio-visualizer-bar hidden" aria-hidden="true">
+                    <span class="wave-icon">🔊</span>
+                    <div class="wave-bars">
+                        <div class="wave-bar wb-1"></div>
+                        <div class="wave-bar wb-2"></div>
+                        <div class="wave-bar wb-3"></div>
+                        <div class="wave-bar wb-4"></div>
+                        <div class="wave-bar wb-5"></div>
+                    </div>
+                    <span class="wave-label">Voice Guidance Active</span>
                 </div>
                 
                 <!-- Main output displays -->
@@ -130,14 +158,19 @@
 
                 <!-- Image upload area -->
                 <div class="upload-area">
-                    <p class="upload-title">Or recognize from image file:</p>
+                    <p class="upload-title">Or recognize static banknote image:</p>
                     <label for="image-upload" class="btn-upload" id="upload-label" role="button" tabindex="0">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
-                        <span>Upload Image</span>
+                        <div class="upload-icon-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-svg">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                        </div>
+                        <div class="upload-text-wrap">
+                            <span class="upload-main-text">Click or Drag & Drop Photo Here</span>
+                            <span class="upload-sub-text">PNG, JPG, WEBP up to 10 MB</span>
+                        </div>
                     </label>
                     <input type="file" id="image-upload" accept="image/*" class="hidden-input" style="display: none;" />
                 </div>

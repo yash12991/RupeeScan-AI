@@ -907,3 +907,334 @@ body.high-contrast .modal-close-btn:focus-visible {
     outline: 3px solid #ffff00;
 }
 
+/* =========================================================
+   PRO HUD VIEWFINDER, TELEMETRY & AUDIO WAVEFORM STYLES
+   ========================================================= */
+
+/* Corner Brackets on Camera Viewfinder */
+.hud-corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 2.5px solid var(--accent-cyan);
+    pointer-events: none;
+    z-index: 6;
+    transition: border-color var(--transition-speed);
+}
+.hud-corner-tl { top: 12px; left: 12px; border-right: none; border-bottom: none; border-top-left-radius: 6px; }
+.hud-corner-tr { top: 12px; right: 12px; border-left: none; border-bottom: none; border-top-right-radius: 6px; }
+.hud-corner-bl { bottom: 12px; left: 12px; border-right: none; border-top: none; border-bottom-left-radius: 6px; }
+.hud-corner-br { bottom: 12px; right: 12px; border-left: none; border-top: none; border-bottom-right-radius: 6px; }
+
+/* Live Telemetry Pill */
+.hud-telemetry {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(8, 9, 13, 0.78);
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #e0f7fa;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 6;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+.hud-pulse-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent-green);
+    animation: hudBlink 1.4s infinite ease-in-out;
+}
+@keyframes hudBlink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Status Header Tech Pill */
+.status-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.model-tech-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(137, 247, 254, 0.12);
+    color: var(--accent-purple);
+    border: 1px solid rgba(137, 247, 254, 0.25);
+    letter-spacing: 0.3px;
+}
+
+/* Audio Visualizer Waveform Bar */
+.audio-visualizer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 18px;
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.25);
+    border-radius: 12px;
+    animation: fadeInVisualizer 0.25s ease-out;
+    margin-bottom: 4px;
+}
+@keyframes fadeInVisualizer {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.wave-bars {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 22px;
+}
+.wave-bar {
+    width: 4px;
+    background: var(--accent-cyan);
+    border-radius: 2px;
+    animation: soundWave 0.75s infinite ease-in-out alternate;
+}
+.wb-1 { height: 8px; animation-delay: 0.1s; }
+.wb-2 { height: 18px; animation-delay: 0.3s; }
+.wb-3 { height: 22px; animation-delay: 0.15s; }
+.wb-4 { height: 14px; animation-delay: 0.4s; }
+.wb-5 { height: 9px; animation-delay: 0.25s; }
+
+@keyframes soundWave {
+    from { transform: scaleY(0.35); }
+    to { transform: scaleY(1.2); }
+}
+.wave-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--accent-cyan);
+}
+
+/* Upgraded Drag & Drop Upload Zone */
+.btn-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+    outline: none;
+}
+.btn-upload:hover, .btn-upload:focus-visible, .btn-upload.dragover {
+    border-color: var(--accent-cyan);
+    background: rgba(0, 242, 254, 0.06);
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+    transform: translateY(-2px);
+}
+.upload-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(0, 242, 254, 0.12);
+    color: var(--accent-cyan);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.upload-text-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.upload-main-text {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+}
+.upload-sub-text {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Enhanced Detection Card & Badges */
+.result-header-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+    text-align: left;
+}
+.denom-symbol-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(137, 247, 254, 0.05));
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    color: var(--accent-cyan);
+    font-size: 1.8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.result-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.denom-tag-pill {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+.result-conf-container {
+    width: 100%;
+    margin: 12px 0 16px 0;
+}
+.conf-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.conf-text {
+    color: var(--text-secondary);
+}
+.conf-percentage {
+    color: var(--accent-cyan);
+    font-weight: 800;
+}
+
+/* Detection Telemetry Pills Grid */
+.detection-pills-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 14px 0;
+}
+.det-pill {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: center;
+}
+.det-pill-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.det-pill-value {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Denomination Specific Color Accents */
+.denom-10_rupees .denom-symbol-badge { color: #d7ccc8; border-color: #8d6e63; }
+.denom-20_rupees .denom-symbol-badge { color: #dce775; border-color: #afb42b; }
+.denom-50_rupees .denom-symbol-badge { color: #80deea; border-color: #00acc1; }
+.denom-100_rupees .denom-symbol-badge { color: #e1bee7; border-color: #ba68c8; }
+.denom-200_rupees .denom-symbol-badge { color: #ffe082; border-color: #ffa000; }
+.denom-500_rupees .denom-symbol-badge { color: #cfd8dc; border-color: #78909c; }
+.denom-2000_rupees .denom-symbol-badge { color: #f48fb1; border-color: #e91e63; }
+
+/* High Contrast Overrides for Pro HUD Elements */
+body.high-contrast .hud-corner {
+    border-color: #ffff00;
+}
+body.high-contrast .hud-telemetry {
+    background: #000;
+    border-color: #ffff00;
+    color: #ffff00;
+    box-shadow: none;
+}
+body.high-contrast .hud-pulse-dot {
+    background: #ffff00;
+    box-shadow: none;
+    animation: none;
+}
+body.high-contrast .model-tech-pill {
+    background: #000;
+    border-color: #ffff00;
+    color: #ffff00;
+}
+body.high-contrast .audio-visualizer-bar {
+    background: #000;
+    border: 2px solid #ffff00;
+}
+body.high-contrast .wave-bar {
+    background: #ffff00;
+}
+body.high-contrast .wave-label {
+    color: #ffff00;
+}
+body.high-contrast .btn-upload {
+    background: #000;
+    border: 2px solid #ffff00;
+}
+body.high-contrast .btn-upload:hover,
+body.high-contrast .btn-upload:focus-visible,
+body.high-contrast .btn-upload.dragover {
+    background: #ffff00;
+}
+body.high-contrast .btn-upload:hover .upload-main-text,
+body.high-contrast .btn-upload:hover .upload-sub-text,
+body.high-contrast .btn-upload:hover .icon-svg {
+    color: #000;
+}
+body.high-contrast .upload-icon-wrap {
+    background: transparent;
+    color: #ffff00;
+}
+body.high-contrast .denom-symbol-badge {
+    background: #000;
+    border-color: #ffff00;
+    color: #ffff00;
+}
+body.high-contrast .denom-tag-pill {
+    color: #ffffff;
+}
+body.high-contrast .conf-percentage {
+    color: #ffff00;
+}
+body.high-contrast .det-pill {
+    background: #000;
+    border-color: #ffff00;
+}
+body.high-contrast .det-pill-label {
+    color: #ffffff;
+}
+body.high-contrast .det-pill-value {
+    color: #ffff00;
+}
+
+
